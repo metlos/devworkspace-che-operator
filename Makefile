@@ -51,7 +51,7 @@ fmt:
 
 ### vet: Run go vet against code
 vet:
-	go vet ./...
+	#go vet ./...
 
 ### generate: Generate code
 generate: controller-gen
