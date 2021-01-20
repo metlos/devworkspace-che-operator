@@ -1,4 +1,4 @@
-package manager
+package gateway
 
 import (
 	"context"
@@ -38,7 +38,7 @@ func TestCreate(t *testing.T) {
 	managerName := "che"
 	ns := "default"
 
-	_, err := gateway.Sync(ctx, &v1alpha1.CheManager{
+	_, _, err := gateway.Sync(ctx, &v1alpha1.CheManager{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      managerName,
 			Namespace: ns,
@@ -52,7 +52,7 @@ func TestCreate(t *testing.T) {
 		t.Fatalf("Error while syncing: %s", err)
 	}
 
-	testGatewayObjectsExist(t, ctx, cl, managerName, ns)
+	TestGatewayObjectsExist(t, ctx, cl, managerName, ns)
 }
 
 func TestDelete(t *testing.T) {
@@ -117,10 +117,10 @@ func TestDelete(t *testing.T) {
 		t.Fatalf("Error while syncing: %s", err)
 	}
 
-	testGatewayObjectsDontExist(t, ctx, cl, managerName, ns)
+	TestGatewayObjectsDontExist(t, ctx, cl, managerName, ns)
 }
 
-func testGatewayObjectsExist(t *testing.T, ctx context.Context, cl client.Client, managerName string, ns string) {
+func TestGatewayObjectsExist(t *testing.T, ctx context.Context, cl client.Client, managerName string, ns string) {
 	sa := corev1.ServiceAccount{}
 	if err := cl.Get(ctx, client.ObjectKey{Name: managerName, Namespace: ns}, &sa); err != nil {
 		t.Errorf("Failed to get a service account called '%s': %s", managerName, err)
@@ -164,7 +164,7 @@ func testGatewayObjectsExist(t *testing.T, ctx context.Context, cl client.Client
 	}
 }
 
-func testGatewayObjectsDontExist(t *testing.T, ctx context.Context, cl client.Client, managerName string, ns string) {
+func TestGatewayObjectsDontExist(t *testing.T, ctx context.Context, cl client.Client, managerName string, ns string) {
 	depl := &appsv1.Deployment{}
 	err := cl.Get(ctx, client.ObjectKey{Name: managerName, Namespace: ns}, depl)
 	if !errors.IsNotFound(err) {
