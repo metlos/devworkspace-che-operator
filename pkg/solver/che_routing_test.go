@@ -3,6 +3,7 @@ package solver
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/che-incubator/devworkspace-che-operator/apis/che-controller/v1alpha1"
@@ -451,5 +452,28 @@ func TestFinalize(t *testing.T) {
 	cm := cms.Items[0]
 	if cm.Name != "che" {
 		t.Fatal("The only configmap left should be the main traefik config, but the configmap has unexpected name")
+	}
+}
+
+func TestEndpointsAlwaysOnSecureProtocolsWhenExposedThroughGateway(t *testing.T) {
+	infrastructure.InitializeForTesting(infrastructure.Kubernetes)
+	routing := relocatableDevWorkspaceRouting()
+	_, slv, objs := getSpecObjects(t, routing)
+
+	exposed, ready, err := slv.GetExposedEndpoints(routing.Spec.Endpoints, objs)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !ready {
+		t.Errorf("The exposed endpoints should be considered ready.")
+	}
+
+	for _, endpoints := range exposed {
+		for _, endpoint := range endpoints {
+			if !strings.HasPrefix(endpoint.Url, "https://") {
+				t.Errorf("The endpoint %s should be exposed on https.", endpoint.Url)
+			}
+		}
 	}
 }
