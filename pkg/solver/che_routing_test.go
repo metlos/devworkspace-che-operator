@@ -372,7 +372,7 @@ func TestReportRelocatableExposedEndpoints(t *testing.T) {
 	if e3.Name != "e3" {
 		t.Errorf("The third endpoint should have been e3 but is %s", e1.Name)
 	}
-	if e3.Url != "http://over.the.rainbow/wsid/m1/9999/" {
+	if e3.Url != "https://over.the.rainbow/wsid/m1/9999/" {
 		t.Errorf("The e3 endpoint should have the following URL: '%s' but has '%s'.", "https://over.the.rainbow/wsid/m1/9999/", e3.Url)
 	}
 }
