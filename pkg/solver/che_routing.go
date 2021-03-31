@@ -143,11 +143,6 @@ func (c *CheRoutingSolver) cheExposedEndpoints(manager *dwoche.CheManager, works
 				continue
 			}
 
-			if endpoint.Secure {
-				// TODO this should also do the magic of ensuring user authentication however we are going to do it
-				// in the future
-			}
-
 			// try to find the endpoint in the ingresses/routes first. If it is there, it is exposed on a subdomain
 			// otherwise it is exposed through the gateway
 			var endpointURL string
