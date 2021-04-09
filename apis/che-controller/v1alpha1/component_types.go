@@ -50,6 +50,48 @@ type CheManagerSpec struct {
 	// it is taken from the `RELATED_IMAGE_gateway_configurer` environment variable of the che
 	// operator deployment/pod. If not defined there, it defaults to a hardcoded value.
 	GatewayConfigurerImage string `json:"gatewayConfigurerImage,omitempty"`
+
+	// Name of a secret that will be used to setup ingress/route TLS certificate.
+	// When the field is empty string, the default cluster certificate will be used.
+	// The same secret is assumed to exist in the same namespace as the CheManager CR and is used for both
+	// the gateway and all devworkspace endpoints.
+	// In case of the devworkspace endpoints, the secret is copied to the namespace of the devworkspace.
+	//
+	// The secret is assumed to hold the key in the `tls.key` data entry and the certificate in the `tls.crt`
+	// data entry.
+	//
+	// +optional
+	TlsSecretName string `json:"tlsSecretName,omitempty"`
+
+	// K8s contains the configuration specific only to Kubernetes
+	K8s CheManagerSpecK8s `json:"k8s,omitempty"`
+}
+
+// CheManagerSpecK8s contains the configuration options specific to Kubernetes only.
+type CheManagerSpecK8s struct {
+	// GatewayIngressAnnotations are the annotations to be put on the gateway ingress. This can be used to configure
+	// the ingress class and the ingress-controller-specific behavior.
+	// When not specified, this defaults to:
+	//
+	//     kubernetes.io/ingress.class:                       "nginx"
+	//     nginx.ingress.kubernetes.io/proxy-read-timeout:    "3600",
+	//     nginx.ingress.kubernetes.io/proxy-connect-timeout: "3600",
+	//     nginx.ingress.kubernetes.io/ssl-redirect:          "true"
+	//
+	// +optional
+	GatewayIngressAnnotations map[string]string `json:"gatewayIngressAnnotations,omitempty"`
+
+	// EndpointIngressAnnotations are the annotations to be put on the workspace endpoint ingresses.
+	// This can be used to configure the ingress class and the ingress-controller-specific behavior.
+	// When not specified, this defaults to:
+	//
+	//     kubernetes.io/ingress.class:                       "nginx"
+	//     nginx.ingress.kubernetes.io/proxy-read-timeout:    "3600",
+	//     nginx.ingress.kubernetes.io/proxy-connect-timeout: "3600",
+	//     nginx.ingress.kubernetes.io/ssl-redirect:          "false"
+	//
+	// +optional
+	EndpointIngressAnnotations map[string]string `json:"endpointIngressAnnotations,omitempty"`
 }
 
 type GatewayPhase string
