@@ -57,8 +57,7 @@ type CheManagerSpec struct {
 	// the gateway and all devworkspace endpoints.
 	// In case of the devworkspace endpoints, the secret is copied to the namespace of the devworkspace.
 	//
-	// The secret is assumed to hold the key in the `tls.key` data entry and the certificate in the `tls.crt`
-	// data entry.
+	// The secret has to be of type "tls".
 	//
 	// +optional
 	TlsSecretName string `json:"tlsSecretName,omitempty"`
