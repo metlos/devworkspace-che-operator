@@ -14,7 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func TestGatewayObjectsExist(t *testing.T, ctx context.Context, cl client.Client, managerName string, ns string) {
+func AssertGatewayObjectsExist(t *testing.T, ctx context.Context, cl client.Client, managerName string, ns string) {
 	sa := corev1.ServiceAccount{}
 	if err := cl.Get(ctx, client.ObjectKey{Name: managerName, Namespace: ns}, &sa); err != nil {
 		t.Errorf("Failed to get a service account called '%s': %s", managerName, err)
@@ -70,7 +70,7 @@ func TestGatewayObjectsExist(t *testing.T, ctx context.Context, cl client.Client
 	}
 }
 
-func TestGatewayObjectsDontExist(t *testing.T, ctx context.Context, cl client.Client, managerName string, ns string) {
+func AssertGatewayObjectsDontExist(t *testing.T, ctx context.Context, cl client.Client, managerName string, ns string) {
 	depl := &appsv1.Deployment{}
 	err := cl.Get(ctx, client.ObjectKey{Name: managerName, Namespace: ns}, depl)
 	if !errors.IsNotFound(err) {

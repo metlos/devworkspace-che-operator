@@ -58,7 +58,7 @@ func TestCreate(t *testing.T) {
 		t.Fatalf("Error while syncing: %s", err)
 	}
 
-	TestGatewayObjectsExist(t, ctx, cl, managerName, ns)
+	AssertGatewayObjectsExist(t, ctx, cl, managerName, ns)
 }
 
 func TestDelete(t *testing.T) {
@@ -125,7 +125,7 @@ func TestDelete(t *testing.T) {
 		t.Fatalf("Error while syncing: %s", err)
 	}
 
-	TestGatewayObjectsDontExist(t, ctx, cl, managerName, ns)
+	AssertGatewayObjectsDontExist(t, ctx, cl, managerName, ns)
 }
 
 func TestUsesIngressAnnotationsForGatewayIngress(t *testing.T) {
@@ -158,7 +158,7 @@ func TestUsesIngressAnnotationsForGatewayIngress(t *testing.T) {
 		t.Fatalf("Error while syncing: %s", err)
 	}
 
-	TestGatewayObjectsExist(t, ctx, cl, managerName, ns)
+	AssertGatewayObjectsExist(t, ctx, cl, managerName, ns)
 
 	ingress := extensions.Ingress{}
 	if err := cl.Get(ctx, client.ObjectKey{Name: managerName, Namespace: ns}, &ingress); err != nil {
@@ -196,7 +196,7 @@ func TestUsesCustomCertificateForGatewayIngress(t *testing.T) {
 		t.Fatalf("Error while syncing: %s", err)
 	}
 
-	TestGatewayObjectsExist(t, ctx, cl, managerName, ns)
+	AssertGatewayObjectsExist(t, ctx, cl, managerName, ns)
 
 	ingress := extensions.Ingress{}
 	if err := cl.Get(ctx, client.ObjectKey{Name: managerName, Namespace: ns}, &ingress); err != nil {
@@ -252,7 +252,7 @@ func TestUsesCustomCertificateForGatewayRoute(t *testing.T) {
 		t.Fatalf("Error while syncing: %s", err)
 	}
 
-	TestGatewayObjectsExist(t, ctx, cl, managerName, ns)
+	AssertGatewayObjectsExist(t, ctx, cl, managerName, ns)
 
 	route := routev1.Route{}
 	if err := cl.Get(ctx, client.ObjectKey{Name: managerName, Namespace: ns}, &route); err != nil {
