@@ -47,15 +47,10 @@ spec:
             k8s:
               description: K8s contains the configuration specific only to Kubernetes
               properties:
-                endpointIngressAnnotations:
+                ingressAnnotations:
                   additionalProperties:
                     type: string
-                  description: "EndpointIngressAnnotations are the annotations to be put on the workspace endpoint ingresses. This can be used to configure the ingress class and the ingress-controller-specific behavior. When not specified, this defaults to: \n     kubernetes.io/ingress.class:                       \"nginx\"     nginx.ingress.kubernetes.io/proxy-read-timeout:    \"3600\",     nginx.ingress.kubernetes.io/proxy-connect-timeout: \"3600\",     nginx.ingress.kubernetes.io/ssl-redirect:          \"false\""
-                  type: object
-                gatewayIngressAnnotations:
-                  additionalProperties:
-                    type: string
-                  description: "GatewayIngressAnnotations are the annotations to be put on the gateway ingress. This can be used to configure the ingress class and the ingress-controller-specific behavior. When not specified, this defaults to: \n     kubernetes.io/ingress.class:                       \"nginx\"     nginx.ingress.kubernetes.io/proxy-read-timeout:    \"3600\",     nginx.ingress.kubernetes.io/proxy-connect-timeout: \"3600\",     nginx.ingress.kubernetes.io/ssl-redirect:          \"true\""
+                  description: "IngressAnnotations are the annotations to be put on the generated ingresses. This can be used to configure the ingress class and the ingress-controller-specific behavior for both the gateway and the ingresses created to expose the Devworkspace component endpoints. When not specified, this defaults to: \n     kubernetes.io/ingress.class:                       \"nginx\"     nginx.ingress.kubernetes.io/proxy-read-timeout:    \"3600\",     nginx.ingress.kubernetes.io/proxy-connect-timeout: \"3600\",     nginx.ingress.kubernetes.io/ssl-redirect:          \"true\""
                   type: object
               type: object
             tlsSecretName:

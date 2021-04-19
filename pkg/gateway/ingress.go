@@ -22,13 +22,6 @@ var (
 			return reflect.DeepEqual(x.Labels, y.Labels)
 		}),
 	}
-
-	defaultIngressAnnotations = map[string]string{
-		"kubernetes.io/ingress.class":                       "nginx",
-		"nginx.ingress.kubernetes.io/proxy-read-timeout":    "3600",
-		"nginx.ingress.kubernetes.io/proxy-connect-timeout": "3600",
-		"nginx.ingress.kubernetes.io/ssl-redirect":          "true",
-	}
 )
 
 func (g *CheGateway) reconcileIngress(syncer sync.Syncer, ctx context.Context, manager *v1alpha1.CheManager) (bool, string, error) {
@@ -58,7 +51,7 @@ func getIngressSpec(manager *v1alpha1.CheManager) *v1beta1.Ingress {
 			Name:        manager.Name,
 			Namespace:   manager.Namespace,
 			Labels:      defaults.GetLabelsForComponent(manager, "external-access"),
-			Annotations: getIngressAnnotations(manager),
+			Annotations: defaults.GetIngressAnnotations(manager),
 		},
 		Spec: v1beta1.IngressSpec{
 			Rules: []v1beta1.IngressRule{
@@ -93,11 +86,4 @@ func getIngressSpec(manager *v1alpha1.CheManager) *v1beta1.Ingress {
 	}
 
 	return ingress
-}
-
-func getIngressAnnotations(manager *v1alpha1.CheManager) map[string]string {
-	if len(manager.Spec.K8s.GatewayIngressAnnotations) > 0 {
-		return manager.Spec.K8s.GatewayIngressAnnotations
-	}
-	return defaultIngressAnnotations
 }

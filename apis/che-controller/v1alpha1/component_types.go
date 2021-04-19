@@ -68,8 +68,9 @@ type CheManagerSpec struct {
 
 // CheManagerSpecK8s contains the configuration options specific to Kubernetes only.
 type CheManagerSpecK8s struct {
-	// GatewayIngressAnnotations are the annotations to be put on the gateway ingress. This can be used to configure
-	// the ingress class and the ingress-controller-specific behavior.
+	// IngressAnnotations are the annotations to be put on the generated ingresses. This can be used to
+	// configure the ingress class and the ingress-controller-specific behavior for both the gateway
+	// and the ingresses created to expose the Devworkspace component endpoints.
 	// When not specified, this defaults to:
 	//
 	//     kubernetes.io/ingress.class:                       "nginx"
@@ -78,19 +79,7 @@ type CheManagerSpecK8s struct {
 	//     nginx.ingress.kubernetes.io/ssl-redirect:          "true"
 	//
 	// +optional
-	GatewayIngressAnnotations map[string]string `json:"gatewayIngressAnnotations,omitempty"`
-
-	// EndpointIngressAnnotations are the annotations to be put on the workspace endpoint ingresses.
-	// This can be used to configure the ingress class and the ingress-controller-specific behavior.
-	// When not specified, this defaults to:
-	//
-	//     kubernetes.io/ingress.class:                       "nginx"
-	//     nginx.ingress.kubernetes.io/proxy-read-timeout:    "3600",
-	//     nginx.ingress.kubernetes.io/proxy-connect-timeout: "3600",
-	//     nginx.ingress.kubernetes.io/ssl-redirect:          "false"
-	//
-	// +optional
-	EndpointIngressAnnotations map[string]string `json:"endpointIngressAnnotations,omitempty"`
+	IngressAnnotations map[string]string `json:"ingressAnnotations,omitempty"`
 }
 
 type GatewayPhase string

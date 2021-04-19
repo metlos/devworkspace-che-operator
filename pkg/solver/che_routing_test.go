@@ -497,7 +497,7 @@ func TestUsesIngressAnnotationsForWorkspaceEndpointIngresses(t *testing.T) {
 		Spec: v1alpha1.CheManagerSpec{
 			GatewayHost: "over.the.rainbow",
 			K8s: v1alpha1.CheManagerSpecK8s{
-				EndpointIngressAnnotations: map[string]string{
+				IngressAnnotations: map[string]string{
 					"a": "b",
 				},
 			},

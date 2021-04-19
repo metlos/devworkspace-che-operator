@@ -18,7 +18,6 @@ import (
 	"path"
 	"strings"
 
-	"github.com/che-incubator/devworkspace-che-operator/apis/che-controller/v1alpha1"
 	dwoche "github.com/che-incubator/devworkspace-che-operator/apis/che-controller/v1alpha1"
 	"github.com/che-incubator/devworkspace-che-operator/pkg/defaults"
 	"github.com/che-incubator/devworkspace-che-operator/pkg/sync"
@@ -48,13 +47,6 @@ const (
 
 var (
 	configMapDiffOpts = cmpopts.IgnoreFields(corev1.ConfigMap{}, "TypeMeta", "ObjectMeta")
-
-	defaultIngressAnnotations = map[string]string{
-		"kubernetes.io/ingress.class":                       "nginx",
-		"nginx.ingress.kubernetes.io/proxy-read-timeout":    "3600",
-		"nginx.ingress.kubernetes.io/proxy-connect-timeout": "3600",
-		"nginx.ingress.kubernetes.io/ssl-redirect":          "false",
-	}
 )
 
 // keys are port numbers, values are maps where keys are endpoint names (in case we need more than 1 endpoint for a single port) and values
@@ -266,7 +258,7 @@ func (c *CheRoutingSolver) getGatewayConfigsAndFillRoutingObjects(cheManager *dw
 		})
 	} else {
 		exposer := &IngressExposer{}
-		if err := exposer.initFrom(context.TODO(), c.client, cheManager, routing, getIngressAnnotations(cheManager)); err != nil {
+		if err := exposer.initFrom(context.TODO(), c.client, cheManager, routing, defaults.GetIngressAnnotations(cheManager)); err != nil {
 			return []corev1.ConfigMap{}, err
 		}
 
@@ -524,11 +516,4 @@ func determineEndpointScheme(gatewayEnabled bool, e dw.Endpoint) string {
 	}
 
 	return scheme
-}
-
-func getIngressAnnotations(manager *v1alpha1.CheManager) map[string]string {
-	if len(manager.Spec.K8s.EndpointIngressAnnotations) > 0 {
-		return manager.Spec.K8s.EndpointIngressAnnotations
-	}
-	return defaultIngressAnnotations
 }
