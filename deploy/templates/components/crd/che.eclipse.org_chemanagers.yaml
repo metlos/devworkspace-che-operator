@@ -59,7 +59,7 @@ spec:
                   type: object
               type: object
             tlsSecretName:
-              description: "Name of a secret that will be used to setup ingress/route TLS certificate. When the field is empty string, the default cluster certificate will be used. The same secret is assumed to exist in the same namespace as the CheManager CR and is used for both the gateway and all devworkspace endpoints. In case of the devworkspace endpoints, the secret is copied to the namespace of the devworkspace. \n The secret is assumed to hold the key in the `tls.key` data entry and the certificate in the `tls.crt` data entry."
+              description: "Name of a secret that will be used to setup ingress/route TLS certificate. When the field is empty string, the default cluster certificate will be used. The same secret is assumed to exist in the same namespace as the CheManager CR and is used for both the gateway and all devworkspace endpoints. In case of the devworkspace endpoints, the secret is copied to the namespace of the devworkspace. \n The secret has to be of type \"tls\"."
               type: string
           type: object
         status:
