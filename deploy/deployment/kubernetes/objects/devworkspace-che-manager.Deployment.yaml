@@ -47,9 +47,9 @@ spec:
         resources:
           limits:
             cpu: 100m
-            memory: 100Mi
+            memory: 256Mi
           requests:
             cpu: 100m
-            memory: 20Mi
+            memory: 32Mi
       serviceAccountName: devworkspace-che-serviceaccount
       terminationGracePeriodSeconds: 10
