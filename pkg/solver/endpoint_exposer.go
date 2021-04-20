@@ -178,7 +178,7 @@ func (e *IngressExposer) getIngressForService(endpoint *EndpointInfo) v1beta1.In
 			Labels: map[string]string{
 				constants.DevWorkspaceIDLabel: e.devWorkspaceID,
 			},
-			Annotations:     nginxIngressAnnotations(e.ingressAnnotations, endpoint.machineName, endpoint.endpointName),
+			Annotations:     finalizeIngressAnnotations(e.ingressAnnotations, endpoint.machineName, endpoint.endpointName),
 			OwnerReferences: endpoint.service.OwnerReferences,
 		},
 		Spec: v1beta1.IngressSpec{
@@ -227,7 +227,7 @@ func routeAnnotations(machineName string, endpointName string) map[string]string
 	}
 }
 
-func nginxIngressAnnotations(ingressAnnotations map[string]string, machineName string, endpointName string) map[string]string {
+func finalizeIngressAnnotations(ingressAnnotations map[string]string, machineName string, endpointName string) map[string]string {
 	annos := map[string]string{}
 	for k, v := range ingressAnnotations {
 		annos[k] = v
