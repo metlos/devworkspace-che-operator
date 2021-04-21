@@ -243,7 +243,7 @@ func (c *CheRoutingSolver) getGatewayConfigsAndFillRoutingObjects(cheManager *dw
 	// suffix, the easiest of which is the iteration order in the map.
 	// Note that this means that the endpoints might get a different route/ingress name on each workspace start because
 	// the iteration order is not guaranteed in Go maps. If we want stable ingress/route names for the endpoints, we need
-	// to devise a different algorithm to produce them. Some kind of hash of workspaceID, machine name, endpoint name and port
+	// to devise a different algorithm to produce them. Some kind of hash of workspaceID, component name, endpoint name and port
 	// might work but will not be relatable to the workspace ID just by looking at it anymore.
 	order := 0
 	if infrastructure.IsOpenShift() {
@@ -284,11 +284,11 @@ func (c *CheRoutingSolver) getGatewayConfigsAndFillRoutingObjects(cheManager *dw
 
 func exposeAllEndpoints(order *int, cheManager *dwoche.CheManager, routing *dwo.DevWorkspaceRouting, config *traefikConfig, objs *solvers.RoutingObjects, ingressExpose func(*EndpointInfo)) {
 	info := &EndpointInfo{}
-	for machineName, endpoints := range routing.Spec.Endpoints {
-		info.machineName = machineName
+	for componentName, endpoints := range routing.Spec.Endpoints {
+		info.componentName = componentName
 		singlehostPorts, multihostPorts := classifyEndpoints(!cheManager.Spec.GatewayDisabled, order, &endpoints)
 
-		addToTraefikConfig(routing.Namespace, routing.Spec.DevWorkspaceId, machineName, singlehostPorts, config)
+		addToTraefikConfig(routing.Namespace, routing.Spec.DevWorkspaceId, componentName, singlehostPorts, config)
 
 		for port, names := range multihostPorts {
 			backingService := findServiceForPort(port, objs)

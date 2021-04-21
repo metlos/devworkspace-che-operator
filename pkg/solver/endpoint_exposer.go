@@ -44,21 +44,21 @@ type RouteExposer struct {
 }
 
 type EndpointInfo struct {
-	order        int
-	machineName  string
-	endpointName string
-	port         int32
-	scheme       string
-	service      *corev1.Service
+	order         int
+	componentName string
+	endpointName  string
+	port          int32
+	scheme        string
+	service       *corev1.Service
 }
 
 // This method is used compose the object names (both Kubernetes objects and "objects" within Traefik configuration)
 // representing object endpoints.
-func getEndpointExposingObjectName(machineName string, workspaceID string, port int32, endpointName string) string {
+func getEndpointExposingObjectName(componentName string, workspaceID string, port int32, endpointName string) string {
 	if endpointName == "" {
-		return fmt.Sprintf("%s-%s-%d", workspaceID, machineName, port)
+		return fmt.Sprintf("%s-%s-%d", workspaceID, componentName, port)
 	}
-	return fmt.Sprintf("%s-%s-%d-%s", workspaceID, machineName, port, endpointName)
+	return fmt.Sprintf("%s-%s-%d-%s", workspaceID, componentName, port, endpointName)
 }
 
 func (e *RouteExposer) initFrom(ctx context.Context, cl client.Client, manager *v1alpha1.CheManager, routing *dwo.DevWorkspaceRouting) error {
@@ -131,12 +131,12 @@ func (e *RouteExposer) getRouteForService(endpoint *EndpointInfo) routev1.Route 
 	targetEndpoint := intstr.FromInt(int(endpoint.port))
 	route := routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      getEndpointExposingObjectName(endpoint.machineName, e.devWorkspaceID, endpoint.port, endpoint.endpointName),
+			Name:      getEndpointExposingObjectName(endpoint.componentName, e.devWorkspaceID, endpoint.port, endpoint.endpointName),
 			Namespace: endpoint.service.Namespace,
 			Labels: map[string]string{
 				constants.DevWorkspaceIDLabel: e.devWorkspaceID,
 			},
-			Annotations:     routeAnnotations(endpoint.machineName, endpoint.endpointName),
+			Annotations:     routeAnnotations(endpoint.componentName, endpoint.endpointName),
 			OwnerReferences: endpoint.service.OwnerReferences,
 		},
 		Spec: routev1.RouteSpec{
@@ -173,12 +173,12 @@ func (e *IngressExposer) getIngressForService(endpoint *EndpointInfo) v1beta1.In
 
 	ingress := v1beta1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      getEndpointExposingObjectName(endpoint.machineName, e.devWorkspaceID, endpoint.port, endpoint.endpointName),
+			Name:      getEndpointExposingObjectName(endpoint.componentName, e.devWorkspaceID, endpoint.port, endpoint.endpointName),
 			Namespace: endpoint.service.Namespace,
 			Labels: map[string]string{
 				constants.DevWorkspaceIDLabel: e.devWorkspaceID,
 			},
-			Annotations:     finalizeIngressAnnotations(e.ingressAnnotations, endpoint.machineName, endpoint.endpointName),
+			Annotations:     finalizeIngressAnnotations(e.ingressAnnotations, endpoint.componentName, endpoint.endpointName),
 			OwnerReferences: endpoint.service.OwnerReferences,
 		},
 		Spec: v1beta1.IngressSpec{

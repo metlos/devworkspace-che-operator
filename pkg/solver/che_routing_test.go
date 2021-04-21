@@ -352,7 +352,7 @@ func TestReportRelocatableExposedEndpoints(t *testing.T) {
 
 	m1, ok := exposed["m1"]
 	if !ok {
-		t.Errorf("The exposed endpoints should have been defined on the m1 machine.")
+		t.Errorf("The exposed endpoints should have been defined on the m1 component.")
 	}
 
 	if len(m1) != 3 {
@@ -404,7 +404,7 @@ func TestReportSubdomainExposedEndpoints(t *testing.T) {
 
 	m1, ok := exposed["m1"]
 	if !ok {
-		t.Errorf("The exposed endpoints should have been defined on the m1 machine.")
+		t.Errorf("The exposed endpoints should have been defined on the m1 component.")
 	}
 
 	if len(m1) != 3 {
