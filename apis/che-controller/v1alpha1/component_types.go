@@ -50,6 +50,36 @@ type CheManagerSpec struct {
 	// it is taken from the `RELATED_IMAGE_gateway_configurer` environment variable of the che
 	// operator deployment/pod. If not defined there, it defaults to a hardcoded value.
 	GatewayConfigurerImage string `json:"gatewayConfigurerImage,omitempty"`
+
+	// Name of a secret that will be used to setup ingress/route TLS certificate.
+	// When the field is empty string, the default cluster certificate will be used.
+	// The same secret is assumed to exist in the same namespace as the CheManager CR and is used for both
+	// the gateway and all devworkspace endpoints.
+	// In case of the devworkspace endpoints, the secret is copied to the namespace of the devworkspace.
+	//
+	// The secret has to be of type "tls".
+	//
+	// +optional
+	TlsSecretName string `json:"tlsSecretName,omitempty"`
+
+	// K8s contains the configuration specific only to Kubernetes
+	K8s CheManagerSpecK8s `json:"k8s,omitempty"`
+}
+
+// CheManagerSpecK8s contains the configuration options specific to Kubernetes only.
+type CheManagerSpecK8s struct {
+	// IngressAnnotations are the annotations to be put on the generated ingresses. This can be used to
+	// configure the ingress class and the ingress-controller-specific behavior for both the gateway
+	// and the ingresses created to expose the Devworkspace component endpoints.
+	// When not specified, this defaults to:
+	//
+	//     kubernetes.io/ingress.class:                       "nginx"
+	//     nginx.ingress.kubernetes.io/proxy-read-timeout:    "3600",
+	//     nginx.ingress.kubernetes.io/proxy-connect-timeout: "3600",
+	//     nginx.ingress.kubernetes.io/ssl-redirect:          "true"
+	//
+	// +optional
+	IngressAnnotations map[string]string `json:"ingressAnnotations,omitempty"`
 }
 
 type GatewayPhase string

@@ -44,6 +44,18 @@ spec:
               gatewayImage:
                 description: GatewayImage is the docker image to use for the Che gateway.  This is only used if GatewayDisabled is false. If not defined in the CR, it is taken from the `RELATED_IMAGE_gateway` environment variable of the che operator deployment/pod. If not defined there, it defaults to a hardcoded value.
                 type: string
+              k8s:
+                description: K8s contains the configuration specific only to Kubernetes
+                properties:
+                  ingressAnnotations:
+                    additionalProperties:
+                      type: string
+                    description: "IngressAnnotations are the annotations to be put on the generated ingresses. This can be used to configure the ingress class and the ingress-controller-specific behavior for both the gateway and the ingresses created to expose the Devworkspace component endpoints. When not specified, this defaults to: \n     kubernetes.io/ingress.class:                       \"nginx\"     nginx.ingress.kubernetes.io/proxy-read-timeout:    \"3600\",     nginx.ingress.kubernetes.io/proxy-connect-timeout: \"3600\",     nginx.ingress.kubernetes.io/ssl-redirect:          \"true\""
+                    type: object
+                type: object
+              tlsSecretName:
+                description: "Name of a secret that will be used to setup ingress/route TLS certificate. When the field is empty string, the default cluster certificate will be used. The same secret is assumed to exist in the same namespace as the CheManager CR and is used for both the gateway and all devworkspace endpoints. In case of the devworkspace endpoints, the secret is copied to the namespace of the devworkspace. \n The secret has to be of type \"tls\"."
+                type: string
             type: object
           status:
             properties:

@@ -45,20 +45,14 @@ func createTestScheme() *runtime.Scheme {
 	return scheme
 }
 
-func getSpecObjects(t *testing.T, routing *dwo.DevWorkspaceRouting) (client.Client, solvers.RoutingSolver, solvers.RoutingObjects) {
+func getSpecObjectsForManager(t *testing.T, mgr *v1alpha1.CheManager, routing *dwo.DevWorkspaceRouting, additionalInitialObjects ...runtime.Object) (client.Client, solvers.RoutingSolver, solvers.RoutingObjects) {
 	scheme := createTestScheme()
-	cheManager := &v1alpha1.CheManager{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:       "che",
-			Namespace:  "ns",
-			Finalizers: []string{manager.FinalizerName},
-		},
-		Spec: v1alpha1.CheManagerSpec{
-			GatewayHost: "over.the.rainbow",
-		},
-	}
 
-	cl := fake.NewFakeClientWithScheme(scheme, cheManager)
+	allObjs := []runtime.Object{mgr}
+	for i := range additionalInitialObjects {
+		allObjs = append(allObjs, additionalInitialObjects[i])
+	}
+	cl := fake.NewFakeClientWithScheme(scheme, allObjs...)
 
 	solver, err := Getter(scheme).GetSolver(cl, "che")
 	if err != nil {
@@ -74,7 +68,7 @@ func getSpecObjects(t *testing.T, routing *dwo.DevWorkspaceRouting) (client.Clie
 
 	// we need to do 1 round of che manager reconciliation so that the solver gets initialized
 	cheRecon := manager.New(cl, scheme)
-	_, err = cheRecon.Reconcile(reconcile.Request{NamespacedName: types.NamespacedName{Name: "che", Namespace: "ns"}})
+	_, err = cheRecon.Reconcile(reconcile.Request{NamespacedName: types.NamespacedName{Name: mgr.Name, Namespace: mgr.Namespace}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -88,6 +82,19 @@ func getSpecObjects(t *testing.T, routing *dwo.DevWorkspaceRouting) (client.Clie
 	cheRecon.Reconcile(reconcile.Request{NamespacedName: types.NamespacedName{Name: "che", Namespace: "ns"}})
 
 	return cl, solver, objs
+}
+
+func getSpecObjects(t *testing.T, routing *dwo.DevWorkspaceRouting) (client.Client, solvers.RoutingSolver, solvers.RoutingObjects) {
+	return getSpecObjectsForManager(t, &v1alpha1.CheManager{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:       "che",
+			Namespace:  "ns",
+			Finalizers: []string{manager.FinalizerName},
+		},
+		Spec: v1alpha1.CheManagerSpec{
+			GatewayHost: "over.the.rainbow",
+		},
+	}, routing)
 }
 
 func subdomainDevWorkspaceRouting() *dwo.DevWorkspaceRouting {
@@ -345,7 +352,7 @@ func TestReportRelocatableExposedEndpoints(t *testing.T) {
 
 	m1, ok := exposed["m1"]
 	if !ok {
-		t.Errorf("The exposed endpoints should have been defined on the m1 machine.")
+		t.Errorf("The exposed endpoints should have been defined on the m1 component.")
 	}
 
 	if len(m1) != 3 {
@@ -397,7 +404,7 @@ func TestReportSubdomainExposedEndpoints(t *testing.T) {
 
 	m1, ok := exposed["m1"]
 	if !ok {
-		t.Errorf("The exposed endpoints should have been defined on the m1 machine.")
+		t.Errorf("The exposed endpoints should have been defined on the m1 component.")
 	}
 
 	if len(m1) != 3 {
@@ -475,5 +482,131 @@ func TestEndpointsAlwaysOnSecureProtocolsWhenExposedThroughGateway(t *testing.T)
 				t.Errorf("The endpoint %s should be exposed on https.", endpoint.Url)
 			}
 		}
+	}
+}
+
+func TestUsesIngressAnnotationsForWorkspaceEndpointIngresses(t *testing.T) {
+	infrastructure.InitializeForTesting(infrastructure.Kubernetes)
+
+	mgr := &v1alpha1.CheManager{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:       "che",
+			Namespace:  "ns",
+			Finalizers: []string{manager.FinalizerName},
+		},
+		Spec: v1alpha1.CheManagerSpec{
+			GatewayHost: "over.the.rainbow",
+			K8s: v1alpha1.CheManagerSpecK8s{
+				IngressAnnotations: map[string]string{
+					"a": "b",
+				},
+			},
+		},
+	}
+
+	_, _, objs := getSpecObjectsForManager(t, mgr, subdomainDevWorkspaceRouting())
+
+	if len(objs.Ingresses) != 1 {
+		t.Fatalf("Unexpected number of generated ingresses: %d", len(objs.Ingresses))
+	}
+
+	ingress := objs.Ingresses[0]
+	if len(ingress.Annotations) != 3 {
+		// 3 annotations - a => b, endpoint-name and component-name
+		t.Fatalf("Unexpected number of annotations on the generated ingress: %d", len(ingress.Annotations))
+	}
+
+	if ingress.Annotations["a"] != "b" {
+		t.Errorf("Unexpected value of the custom endpoint ingress annotation")
+	}
+}
+
+func TestUsesCustomCertificateForWorkspaceEndpointIngresses(t *testing.T) {
+	infrastructure.InitializeForTesting(infrastructure.Kubernetes)
+
+	mgr := &v1alpha1.CheManager{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:       "che",
+			Namespace:  "ns",
+			Finalizers: []string{manager.FinalizerName},
+		},
+		Spec: v1alpha1.CheManagerSpec{
+			GatewayHost:   "beyond.comprehension",
+			TlsSecretName: "tlsSecret",
+		},
+	}
+
+	_, _, objs := getSpecObjectsForManager(t, mgr, subdomainDevWorkspaceRouting(), &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "tlsSecret",
+			Namespace: "ns",
+		},
+		Data: map[string][]byte{
+			"tls.key": []byte("asdf"),
+			"tls.crt": []byte("qwer"),
+		},
+	})
+
+	if len(objs.Ingresses) != 1 {
+		t.Fatalf("Unexpected number of generated ingresses: %d", len(objs.Ingresses))
+	}
+
+	ingress := objs.Ingresses[0]
+
+	if len(ingress.Spec.TLS) != 1 {
+		t.Fatalf("Unexpected number of TLS records on the ingress: %d", len(ingress.Spec.TLS))
+	}
+
+	if ingress.Spec.TLS[0].SecretName != "wsid-endpoints" {
+		t.Errorf("Unexpected name of the TLS secret on the ingress: %s", ingress.Spec.TLS[0].SecretName)
+	}
+
+	if len(ingress.Spec.TLS[0].Hosts) != 1 {
+		t.Fatalf("Unexpected number of host records on the TLS spec: %d", len(ingress.Spec.TLS[0].Hosts))
+	}
+
+	if ingress.Spec.TLS[0].Hosts[0] != "wsid-1.over.the.rainbow" {
+		t.Errorf("Unexpected host name of the TLS spec: %s", ingress.Spec.TLS[0].Hosts[0])
+	}
+}
+
+func TestUsesCustomCertificateForWorkspaceEndpointRoutes(t *testing.T) {
+	infrastructure.InitializeForTesting(infrastructure.OpenShiftv4)
+
+	mgr := &v1alpha1.CheManager{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:       "che",
+			Namespace:  "ns",
+			Finalizers: []string{manager.FinalizerName},
+		},
+		Spec: v1alpha1.CheManagerSpec{
+			GatewayHost:   "beyond.comprehension",
+			TlsSecretName: "tlsSecret",
+		},
+	}
+
+	_, _, objs := getSpecObjectsForManager(t, mgr, subdomainDevWorkspaceRouting(), &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "tlsSecret",
+			Namespace: "ns",
+		},
+		Data: map[string][]byte{
+			"tls.key": []byte("asdf"),
+			"tls.crt": []byte("qwer"),
+		},
+	})
+
+	if len(objs.Routes) != 1 {
+		t.Fatalf("Unexpected number of generated routes: %d", len(objs.Routes))
+	}
+
+	route := objs.Routes[0]
+
+	if route.Spec.TLS.Certificate != "qwer" {
+		t.Errorf("Unexpected name of the TLS certificate on the route: %s", route.Spec.TLS.Certificate)
+	}
+
+	if route.Spec.TLS.Key != "asdf" {
+		t.Errorf("Unexpected key of TLS spec: %s", route.Spec.TLS.Key)
 	}
 }

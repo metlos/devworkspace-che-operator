@@ -18,7 +18,6 @@ import (
 	"path"
 	"strings"
 
-	"github.com/che-incubator/devworkspace-che-operator/apis/che-controller/v1alpha1"
 	dwoche "github.com/che-incubator/devworkspace-che-operator/apis/che-controller/v1alpha1"
 	"github.com/che-incubator/devworkspace-che-operator/pkg/defaults"
 	"github.com/che-incubator/devworkspace-che-operator/pkg/sync"
@@ -244,14 +243,29 @@ func (c *CheRoutingSolver) getGatewayConfigsAndFillRoutingObjects(cheManager *dw
 	// suffix, the easiest of which is the iteration order in the map.
 	// Note that this means that the endpoints might get a different route/ingress name on each workspace start because
 	// the iteration order is not guaranteed in Go maps. If we want stable ingress/route names for the endpoints, we need
-	// to devise a different algorithm to produce them. Some kind of hash of workspaceID, machine name, endpoint name and port
+	// to devise a different algorithm to produce them. Some kind of hash of workspaceID, component name, endpoint name and port
 	// might work but will not be relatable to the workspace ID just by looking at it anymore.
 	order := 0
-	for machineName, endpoints := range routing.Spec.Endpoints {
-		singlehostPorts, multihostPorts := classifyEndpoints(!cheManager.Spec.GatewayDisabled, &order, &endpoints)
+	if infrastructure.IsOpenShift() {
+		exposer := &RouteExposer{}
+		if err := exposer.initFrom(context.TODO(), c.client, cheManager, routing); err != nil {
+			return []corev1.ConfigMap{}, err
+		}
 
-		addToTraefikConfig(routing.Namespace, workspaceID, machineName, singlehostPorts, &config)
-		addToRoutingObjects(cheManager, routing.Namespace, routing.Spec.RoutingSuffix, workspaceID, machineName, multihostPorts, objs)
+		exposeAllEndpoints(&order, cheManager, routing, &config, objs, func(info *EndpointInfo) {
+			route := exposer.getRouteForService(info)
+			objs.Routes = append(objs.Routes, route)
+		})
+	} else {
+		exposer := &IngressExposer{}
+		if err := exposer.initFrom(context.TODO(), c.client, cheManager, routing, defaults.GetIngressAnnotations(cheManager)); err != nil {
+			return []corev1.ConfigMap{}, err
+		}
+
+		exposeAllEndpoints(&order, cheManager, routing, &config, objs, func(info *EndpointInfo) {
+			ingress := exposer.getIngressForService(info)
+			objs.Ingresses = append(objs.Ingresses, ingress)
+		})
 	}
 
 	if len(config.HTTP.Routers) > 0 {
@@ -266,6 +280,29 @@ func (c *CheRoutingSolver) getGatewayConfigsAndFillRoutingObjects(cheManager *dw
 	}
 
 	return []corev1.ConfigMap{}, nil
+}
+
+func exposeAllEndpoints(order *int, cheManager *dwoche.CheManager, routing *dwo.DevWorkspaceRouting, config *traefikConfig, objs *solvers.RoutingObjects, ingressExpose func(*EndpointInfo)) {
+	info := &EndpointInfo{}
+	for componentName, endpoints := range routing.Spec.Endpoints {
+		info.componentName = componentName
+		singlehostPorts, multihostPorts := classifyEndpoints(!cheManager.Spec.GatewayDisabled, order, &endpoints)
+
+		addToTraefikConfig(routing.Namespace, routing.Spec.DevWorkspaceId, componentName, singlehostPorts, config)
+
+		for port, names := range multihostPorts {
+			backingService := findServiceForPort(port, objs)
+			for endpointName, val := range names {
+				info.endpointName = endpointName
+				info.order = val.order
+				info.port = port
+				info.scheme = val.endpointScheme
+				info.service = backingService
+
+				ingressExpose(info)
+			}
+		}
+	}
 }
 
 func getTrackedEndpointName(endpoint *dw.Endpoint) string {
@@ -351,23 +388,6 @@ func addToTraefikConfig(namespace string, workspaceID string, machineName string
 				StripPrefix: traefikConfigStripPrefix{
 					Prefixes: []string{prefix},
 				},
-			}
-		}
-	}
-}
-
-func addToRoutingObjects(cheManager *v1alpha1.CheManager, namespace string, baseDomain string, workspaceID string, machineName string, portMapping portMapping, objs *solvers.RoutingObjects) {
-	isOpenShift := infrastructure.IsOpenShift()
-
-	for port, names := range portMapping {
-		backingService := findServiceForPort(port, objs)
-		for endpointName, val := range names {
-			if isOpenShift {
-				route := getRouteForService(val.order, machineName, endpointName, port, val.endpointScheme, baseDomain, workspaceID, backingService)
-				objs.Routes = append(objs.Routes, route)
-			} else {
-				ingress := getIngressForService(val.order, machineName, endpointName, port, val.endpointScheme, baseDomain, workspaceID, backingService)
-				objs.Ingresses = append(objs.Ingresses, ingress)
 			}
 		}
 	}
