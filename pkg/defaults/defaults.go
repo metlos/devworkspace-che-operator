@@ -4,7 +4,7 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/che-incubator/devworkspace-che-operator/apis/che-controller/v1alpha1"
+	"github.com/eclipse-che/che-operator/pkg/apis/org/v2alpha1"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
@@ -39,8 +39,8 @@ func GetGatewayWorkpaceConfigMapName(workspaceID string) string {
 	return workspaceID
 }
 
-func GetLabelsForComponent(router *v1alpha1.CheManager, component string) map[string]string {
-	return GetLabelsFromNames(router.Name, component)
+func GetLabelsForComponent(cluster *v2alpha1.CheCluster, component string) map[string]string {
+	return GetLabelsFromNames(cluster.Name, component)
 }
 
 func GetLabelsFromNames(appName string, component string) map[string]string {
@@ -59,9 +59,9 @@ func GetGatewayConfigurerImage() string {
 	return read(gatewayConfigurerImageEnvVarName, defaultGatewayConfigurerImage)
 }
 
-func GetIngressAnnotations(manager *v1alpha1.CheManager) map[string]string {
-	if len(manager.Spec.K8s.IngressAnnotations) > 0 {
-		return manager.Spec.K8s.IngressAnnotations
+func GetIngressAnnotations(cluster *v2alpha1.CheCluster) map[string]string {
+	if len(cluster.Spec.K8s.IngressAnnotations) > 0 {
+		return cluster.Spec.K8s.IngressAnnotations
 	}
 	return DefaultIngressAnnotations
 }

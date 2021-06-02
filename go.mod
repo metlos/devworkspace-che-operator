@@ -5,22 +5,15 @@ go 1.14
 require (
 	github.com/devfile/api/v2 v2.0.0-20210427194344-cd9c30e6aa05
 	github.com/devfile/devworkspace-operator v0.2.1-0.20210518134212-698baff5f249
+	github.com/eclipse-che/che-operator v0.0.0-00010101000000-000000000000
 	github.com/go-logr/logr v0.4.0 // indirect
 	github.com/go-logr/zapr v0.2.0 // indirect
-	github.com/golang/groupcache v0.0.0-20191027212112-611e8accdfc9 // indirect
 	github.com/google/go-cmp v0.5.0
-	github.com/hashicorp/golang-lru v0.5.3 // indirect
-	github.com/json-iterator/go v1.1.8 // indirect
 	github.com/openshift/api v3.9.1-0.20190924102528-32369d4db2ad+incompatible
-	github.com/pkg/errors v0.9.1 // indirect
-	github.com/prometheus/client_golang v1.2.1 // indirect
-	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
-	google.golang.org/appengine v1.6.5 // indirect
 	k8s.io/api v0.19.0
 	k8s.io/apiextensions-apiserver v0.18.8
 	k8s.io/apimachinery v0.19.0
-	k8s.io/client-go v12.0.0+incompatible // indirect
-	k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a // indirect
+	k8s.io/utils v0.0.0-20191010214722-8d271d903fe4
 	sigs.k8s.io/controller-runtime v0.6.3
 	sigs.k8s.io/yaml v1.2.0
 )
@@ -66,4 +59,4 @@ replace (
 
 replace github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309 // Required by Helm
 
-replace github.com/eclipse-che/che-operator => github.com/metlos/che-operator v0.0.0-20210531120043-c7a9d962743a
+replace github.com/eclipse-che/che-operator => github.com/metlos/che-operator v0.0.0-20210602141825-71eb7e157028

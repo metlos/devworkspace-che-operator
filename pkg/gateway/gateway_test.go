@@ -6,6 +6,8 @@ import (
 
 	"github.com/che-incubator/devworkspace-che-operator/apis/che-controller/v1alpha1"
 	"github.com/devfile/devworkspace-operator/pkg/infrastructure"
+	"github.com/eclipse-che/che-operator/pkg/apis"
+	"github.com/eclipse-che/che-operator/pkg/apis/org/v2alpha1"
 	routev1 "github.com/openshift/api/route/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -15,6 +17,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -28,37 +31,50 @@ func createTestScheme() *runtime.Scheme {
 	utilruntime.Must(appsv1.AddToScheme(scheme))
 	utilruntime.Must(rbac.AddToScheme(scheme))
 	utilruntime.Must(routev1.AddToScheme(scheme))
+	utilruntime.Must(apis.AddToScheme(scheme))
 
 	return scheme
 }
 
 func TestCreate(t *testing.T) {
-	infrastructure.InitializeForTesting(infrastructure.Kubernetes)
+	test := func(t *testing.T, infra infrastructure.Type) {
+		infrastructure.InitializeForTesting(infra)
 
-	scheme := createTestScheme()
+		scheme := createTestScheme()
 
-	cl := fake.NewFakeClientWithScheme(scheme)
-	ctx := context.TODO()
+		cl := fake.NewFakeClientWithScheme(scheme)
+		ctx := context.TODO()
 
-	gateway := CheGateway{client: cl, scheme: scheme}
+		gateway := CheGateway{client: cl, scheme: scheme}
 
-	managerName := "che"
-	ns := "default"
+		managerName := "che"
+		ns := "default"
 
-	_, _, err := gateway.Sync(ctx, &v1alpha1.CheManager{
-		ObjectMeta: v1.ObjectMeta{
-			Name:      managerName,
-			Namespace: ns,
-		},
-		Spec: v1alpha1.CheManagerSpec{
-			GatewayHost: "over.the.rainbow",
-		},
-	})
-	if err != nil {
-		t.Fatalf("Error while syncing: %s", err)
+		_, _, err := gateway.Sync(ctx, &v2alpha1.CheCluster{
+			ObjectMeta: v1.ObjectMeta{
+				Name:      managerName,
+				Namespace: ns,
+			},
+			Spec: v2alpha1.CheClusterSpec{
+				Gateway: v2alpha1.CheGatewaySpec{
+					Host: "over.the.rainbow",
+				},
+			},
+		})
+		if err != nil {
+			t.Fatalf("Error while syncing: %s", err)
+		}
+
+		AssertGatewayObjectsExist(t, ctx, cl, managerName, ns)
 	}
 
-	AssertGatewayObjectsExist(t, ctx, cl, managerName, ns)
+	t.Run("openshift", func(t *testing.T) {
+		test(t, infrastructure.OpenShiftv4)
+	})
+
+	t.Run("kubernetes", func(t *testing.T) {
+		test(t, infrastructure.Kubernetes)
+	})
 }
 
 func TestDelete(t *testing.T) {
@@ -111,14 +127,16 @@ func TestDelete(t *testing.T) {
 
 	gateway := CheGateway{client: cl, scheme: scheme}
 
-	err := gateway.Delete(ctx, &v1alpha1.CheManager{
+	err := gateway.Delete(ctx, &v2alpha1.CheCluster{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      managerName,
 			Namespace: ns,
 		},
-		Spec: v1alpha1.CheManagerSpec{
-			GatewayHost:     "over.the.rainbow",
-			GatewayDisabled: false,
+		Spec: v2alpha1.CheClusterSpec{
+			Gateway: v2alpha1.CheGatewaySpec{
+				Host:    "over.the.rainbow",
+				Enabled: pointer.BoolPtr(true),
+			},
 		},
 	})
 	if err != nil {
@@ -140,14 +158,16 @@ func TestUsesIngressAnnotationsForGatewayIngress(t *testing.T) {
 	managerName := "che"
 	ns := "default"
 
-	_, _, err := gateway.Sync(ctx, &v1alpha1.CheManager{
+	_, _, err := gateway.Sync(ctx, &v2alpha1.CheCluster{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      managerName,
 			Namespace: ns,
 		},
-		Spec: v1alpha1.CheManagerSpec{
-			GatewayHost: "over.the.rainbow",
-			K8s: v1alpha1.CheManagerSpecK8s{
+		Spec: v2alpha1.CheClusterSpec{
+			Gateway: v2alpha1.CheGatewaySpec{
+				Host: "over.the.rainbow",
+			},
+			K8s: v2alpha1.CheClusterSpecK8s{
 				IngressAnnotations: map[string]string{
 					"a": "b",
 				},
@@ -182,14 +202,16 @@ func TestUsesCustomCertificateForGatewayIngress(t *testing.T) {
 	managerName := "che"
 	ns := "default"
 
-	_, _, err := gateway.Sync(ctx, &v1alpha1.CheManager{
+	_, _, err := gateway.Sync(ctx, &v2alpha1.CheCluster{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      managerName,
 			Namespace: ns,
 		},
-		Spec: v1alpha1.CheManagerSpec{
-			GatewayHost:   "over.the.rainbow",
-			TlsSecretName: "kachny",
+		Spec: v2alpha1.CheClusterSpec{
+			Gateway: v2alpha1.CheGatewaySpec{
+				Host:          "over.the.rainbow",
+				TlsSecretName: "kachny",
+			},
 		},
 	})
 	if err != nil {
@@ -238,14 +260,16 @@ func TestUsesCustomCertificateForGatewayRoute(t *testing.T) {
 
 	gateway := CheGateway{client: cl, scheme: scheme}
 
-	_, _, err := gateway.Sync(ctx, &v1alpha1.CheManager{
+	_, _, err := gateway.Sync(ctx, &v2alpha1.CheCluster{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      managerName,
 			Namespace: ns,
 		},
-		Spec: v1alpha1.CheManagerSpec{
-			GatewayHost:   "over.the.rainbow",
-			TlsSecretName: "tlsSecret",
+		Spec: v2alpha1.CheClusterSpec{
+			Gateway: v2alpha1.CheGatewaySpec{
+				Host:          "over.the.rainbow",
+				TlsSecretName: "tlsSecret",
+			},
 		},
 	})
 	if err != nil {
