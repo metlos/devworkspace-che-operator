@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/che-incubator/devworkspace-che-operator/apis/che-controller/v1alpha1"
 	"github.com/che-incubator/devworkspace-che-operator/pkg/defaults"
 	"github.com/che-incubator/devworkspace-che-operator/pkg/manager"
 	dw "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -37,7 +36,6 @@ import (
 
 func createTestScheme() *runtime.Scheme {
 	scheme := runtime.NewScheme()
-	utilruntime.Must(v1alpha1.AddToScheme(scheme))
 	utilruntime.Must(extensions.AddToScheme(scheme))
 	utilruntime.Must(corev1.AddToScheme(scheme))
 	utilruntime.Must(appsv1.AddToScheme(scheme))

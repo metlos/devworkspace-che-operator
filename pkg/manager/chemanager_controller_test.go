@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/che-incubator/devworkspace-che-operator/apis/che-controller/v1alpha1"
 	"github.com/che-incubator/devworkspace-che-operator/pkg/defaults"
 	"github.com/che-incubator/devworkspace-che-operator/pkg/gateway"
 	"github.com/che-incubator/devworkspace-che-operator/pkg/sync"
@@ -20,6 +19,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	extensions "k8s.io/api/extensions/v1beta1"
+	"k8s.io/api/node/v1alpha1"
 	rbac "k8s.io/api/rbac/v1"
 	"k8s.io/utils/pointer"
 

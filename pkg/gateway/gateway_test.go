@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/che-incubator/devworkspace-che-operator/apis/che-controller/v1alpha1"
 	"github.com/devfile/devworkspace-operator/pkg/infrastructure"
 	"github.com/eclipse-che/che-operator/pkg/apis"
 	"github.com/eclipse-che/che-operator/pkg/apis/org/v2alpha1"
@@ -12,8 +11,8 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	extensions "k8s.io/api/extensions/v1beta1"
+	"k8s.io/api/node/v1alpha1"
 	rbac "k8s.io/api/rbac/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -87,37 +86,37 @@ func TestDelete(t *testing.T) {
 
 	cl := fake.NewFakeClientWithScheme(scheme,
 		&appsv1.Deployment{
-			ObjectMeta: metav1.ObjectMeta{
+			ObjectMeta: v1.ObjectMeta{
 				Name:      managerName,
 				Namespace: ns,
 			},
 		},
 		&corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
+			ObjectMeta: v1.ObjectMeta{
 				Name:      managerName,
 				Namespace: ns,
 			},
 		},
 		&rbac.RoleBinding{
-			ObjectMeta: metav1.ObjectMeta{
+			ObjectMeta: v1.ObjectMeta{
 				Name:      managerName,
 				Namespace: ns,
 			},
 		},
 		&rbac.Role{
-			ObjectMeta: metav1.ObjectMeta{
+			ObjectMeta: v1.ObjectMeta{
 				Name:      managerName,
 				Namespace: ns,
 			},
 		},
 		&corev1.ServiceAccount{
-			ObjectMeta: metav1.ObjectMeta{
+			ObjectMeta: v1.ObjectMeta{
 				Name:      managerName,
 				Namespace: ns,
 			},
 		},
 		&corev1.Service{
-			ObjectMeta: metav1.ObjectMeta{
+			ObjectMeta: v1.ObjectMeta{
 				Name:      managerName,
 				Namespace: ns,
 			},

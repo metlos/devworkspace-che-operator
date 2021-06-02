@@ -30,10 +30,10 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	"github.com/che-incubator/devworkspace-che-operator/apis/che-controller/v1alpha1"
 	"github.com/che-incubator/devworkspace-che-operator/pkg/manager"
 	"github.com/che-incubator/devworkspace-che-operator/pkg/solver"
 	"github.com/devfile/devworkspace-operator/pkg/infrastructure"
+	"github.com/eclipse-che/che-operator/pkg/apis"
 	routev1 "github.com/openshift/api/route/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 )
@@ -50,7 +50,7 @@ func init() {
 		os.Exit(1)
 	}
 
-	utilruntime.Must(v1alpha1.AddToScheme(scheme))
+	utilruntime.Must(apis.AddToScheme(scheme))
 	utilruntime.Must(controllerv1alpha1.AddToScheme(scheme))
 	utilruntime.Must(extensions.AddToScheme(scheme))
 	utilruntime.Must(corev1.AddToScheme(scheme))
