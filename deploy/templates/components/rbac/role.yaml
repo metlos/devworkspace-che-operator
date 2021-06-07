@@ -93,29 +93,29 @@ rules:
   - update
   - watch
 - apiGroups:
-  - che.eclipse.org
+  - org.eclipse.che
   resources:
   - '*'
   verbs:
   - '*'
 - apiGroups:
-  - che.eclipse.org
+  - org.eclipse.che
   resources:
-  - chemanagers
+  - checlusters
   verbs:
   - '*'
 - apiGroups:
-  - che.eclipse.org
+  - org.eclipse.che
   resources:
-  - chemanagers/status
+  - checlusters/status
   verbs:
   - get
   - patch
   - update
 - apiGroups:
-  - che.eclipse.org
+  - org.eclipse.che
   resources:
-  - chemanagers/finalizers
+  - checlusters/finalizers
   verbs:
   - update
 - apiGroups:
