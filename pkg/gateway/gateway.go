@@ -364,7 +364,7 @@ func getGatewayDeploymentSpec(cluster *v2alpha1.CheCluster) appsv1.Deployment {
 								},
 								{
 									Name:  "CONFIG_BUMP_LABELS",
-									Value: labels.FormatLabels(defaults.GetLabelsForComponent(cluster, "gateway-config")),
+									Value: labels.FormatLabels(defaults.GetGatewayWorkspaceConfigMapLabels(cluster)),
 								},
 								{
 									Name: "CONFIG_BUMP_NAMESPACE",

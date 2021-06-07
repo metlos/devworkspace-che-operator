@@ -18,11 +18,11 @@ import (
 	stdErrors "errors"
 	"fmt"
 	"math/rand"
+	"reflect"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/che-incubator/devworkspace-che-operator/pkg/conversion"
 	"github.com/che-incubator/devworkspace-che-operator/pkg/gateway"
 	datasync "github.com/che-incubator/devworkspace-che-operator/pkg/sync"
 	"github.com/devfile/devworkspace-operator/pkg/infrastructure"
@@ -145,7 +145,19 @@ func (r *CheReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	current := checluster.AsV2alpha1(currentV1)
 
 	if current.GetDeletionTimestamp() != nil {
-		return ctrl.Result{}, r.finalize(ctx, current)
+		return ctrl.Result{}, r.finalize(ctx, current, currentV1)
+	}
+
+	if !current.Spec.IsEnabled() {
+		res, err := r.updateStatus(ctx, current, currentV1, nil, current.Status.GatewayHost, current.Status.WorkspaceBaseDomain, v2alpha1.ClusterPhaseInactive, "Devworkspace Che is disabled")
+		if err != nil {
+			return res, err
+		}
+
+		currentV1 = &checlusterv1.CheCluster{}
+		_ = r.client.Get(ctx, req.NamespacedName, currentV1)
+
+		return res, nil
 	}
 
 	finalizerUpdated, err := r.ensureFinalizer(ctx, current)
@@ -162,7 +174,7 @@ func (r *CheReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	err = r.validate(current)
 	if err != nil {
 		log.Info("validation errors", "errors", err.Error())
-		res, err := r.updateStatus(ctx, current, nil, current.Status.GatewayHost, current.Status.WorkspaceBaseDomain, v2alpha1.ClusterPhaseInactive, err.Error())
+		res, err := r.updateStatus(ctx, current, currentV1, nil, current.Status.GatewayHost, current.Status.WorkspaceBaseDomain, v2alpha1.ClusterPhaseInactive, err.Error())
 		if err != nil {
 			return res, err
 		}
@@ -187,7 +199,7 @@ func (r *CheReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 
 		if workspaceBaseDomain == "" {
-			res, err := r.updateStatus(ctx, current, nil, current.Status.GatewayHost, current.Status.WorkspaceBaseDomain, v2alpha1.ClusterPhaseInactive, "Could not auto-detect the workspaceBaseDomain. Please set it explicitly in the spec.")
+			res, err := r.updateStatus(ctx, current, currentV1, nil, current.Status.GatewayHost, current.Status.WorkspaceBaseDomain, v2alpha1.ClusterPhaseInactive, "Could not auto-detect the workspaceBaseDomain. Please set it explicitly in the spec.")
 			if err != nil {
 				return res, err
 			}
@@ -196,7 +208,7 @@ func (r *CheReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 	}
 
-	res, err := r.updateStatus(ctx, current, &changed, host, workspaceBaseDomain, v2alpha1.ClusterPhaseActive, "")
+	res, err := r.updateStatus(ctx, current, currentV1, &changed, host, workspaceBaseDomain, v2alpha1.ClusterPhaseActive, "")
 
 	if err != nil {
 		return res, err
@@ -208,9 +220,8 @@ func (r *CheReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	return res, nil
 }
 
-func (r *CheReconciler) updateStatus(ctx context.Context, cluster *v2alpha1.CheCluster, changed *bool, host string, workspaceDomain string, phase v2alpha1.ClusterPhase, phaseMessage string) (ctrl.Result, error) {
+func (r *CheReconciler) updateStatus(ctx context.Context, cluster *v2alpha1.CheCluster, v1Cluster *checlusterv1.CheCluster, changed *bool, host string, workspaceDomain string, phase v2alpha1.ClusterPhase, phaseMessage string) (ctrl.Result, error) {
 	currentPhase := cluster.Status.GatewayPhase
-	currentHost := cluster.Status.GatewayHost
 
 	if changed != nil {
 		if !cluster.Spec.Gateway.IsEnabled() {
@@ -229,22 +240,26 @@ func (r *CheReconciler) updateStatus(ctx context.Context, cluster *v2alpha1.CheC
 	cluster.Status.Phase = phase
 	cluster.Status.Message = phaseMessage
 
-	if currentPhase != cluster.Status.GatewayPhase || currentHost != cluster.Status.GatewayHost {
-		return ctrl.Result{Requeue: true}, r.client.Status().Patch(ctx, checluster.AsV1(cluster), conversion.StatusPatch(cluster))
+	var err error
+	if !reflect.DeepEqual(v1Cluster.Status.DevworkspaceStatus, cluster.Status) {
+		v1Cluster.Status.DevworkspaceStatus = cluster.Status
+		err = r.client.Status().Update(ctx, v1Cluster)
 	}
 
-	return ctrl.Result{Requeue: currentPhase == v2alpha1.GatewayPhaseInitializing || cluster.Status.Phase != v2alpha1.ClusterPhaseActive}, nil
+	requeue := cluster.Spec.IsEnabled() && (currentPhase == v2alpha1.GatewayPhaseInitializing ||
+		cluster.Status.Phase != v2alpha1.ClusterPhaseActive)
+
+	return ctrl.Result{Requeue: requeue}, err
 }
 
 func (r *CheReconciler) validate(cluster *v2alpha1.CheCluster) error {
 	validationErrors := []string{}
 
 	if !infrastructure.IsOpenShift() {
-		if cluster.Spec.Gateway.Host == "" {
-			validationErrors = append(validationErrors, "gateway.host must be specified")
-		}
+		// The validation error messages must correspond to the storage version of the resource, which is currently
+		// v1...
 		if cluster.Spec.WorkspaceDomainEndpoints.BaseDomain == "" {
-			validationErrors = append(validationErrors, "workspaceDomainEndpoints.baseDomain must be specified")
+			validationErrors = append(validationErrors, "spec.k8s.ingressDomain must be specified")
 		}
 	}
 
@@ -260,7 +275,7 @@ func (r *CheReconciler) validate(cluster *v2alpha1.CheCluster) error {
 	return nil
 }
 
-func (r *CheReconciler) finalize(ctx context.Context, cluster *v2alpha1.CheCluster) (err error) {
+func (r *CheReconciler) finalize(ctx context.Context, cluster *v2alpha1.CheCluster, v1Cluster *checlusterv1.CheCluster) (err error) {
 	err = r.gatewayConfigFinalize(ctx, cluster)
 
 	if err == nil {
@@ -277,7 +292,9 @@ func (r *CheReconciler) finalize(ctx context.Context, cluster *v2alpha1.CheClust
 	} else {
 		cluster.Status.Phase = v2alpha1.ClusterPhasePendingDeletion
 		cluster.Status.Message = fmt.Sprintf("Finalization has failed: %s", err.Error())
-		err = r.client.Status().Patch(ctx, checluster.AsV1(cluster), conversion.StatusPatch(cluster))
+
+		v1Cluster.Status.DevworkspaceStatus = cluster.Status
+		err = r.client.Status().Update(ctx, v1Cluster)
 	}
 
 	return err

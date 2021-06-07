@@ -33,6 +33,14 @@ var (
 		"nginx.ingress.kubernetes.io/proxy-connect-timeout": "3600",
 		"nginx.ingress.kubernetes.io/ssl-redirect":          "true",
 	}
+
+	// If this looks weirdly out of place to you from all other labels, then you're completely right!
+	// These labels are the default ones used by che-operator and Che7. Let's keep the defaults
+	// the same for the ease of translation...
+	defaultGatewayConfigLabels = map[string]string{
+		"app":       "che",
+		"component": "che-gateway-config",
+	}
 )
 
 func GetGatewayWorkpaceConfigMapName(workspaceID string) string {
@@ -44,11 +52,18 @@ func GetLabelsForComponent(cluster *v2alpha1.CheCluster, component string) map[s
 }
 
 func GetLabelsFromNames(appName string, component string) map[string]string {
-	return map[string]string{
-		"app.kubernetes.io/name":      appName,
-		"app.kubernetes.io/part-of":   appName,
-		"app.kubernetes.io/component": component,
-	}
+	return AddStandardLabelsFromNames(appName, component, map[string]string{})
+}
+
+func AddStandardLabelsForComponent(cluster *v2alpha1.CheCluster, component string, labels map[string]string) map[string]string {
+	return AddStandardLabelsFromNames(cluster.Name, component, labels)
+}
+
+func AddStandardLabelsFromNames(appName string, component string, labels map[string]string) map[string]string {
+	labels["app.kubernetes.io/name"] = appName
+	labels["app.kubernetes.io/part-of"] = appName
+	labels["app.kubernetes.io/component"] = component
+	return labels
 }
 
 func GetGatewayImage() string {
@@ -64,6 +79,13 @@ func GetIngressAnnotations(cluster *v2alpha1.CheCluster) map[string]string {
 		return cluster.Spec.K8s.IngressAnnotations
 	}
 	return DefaultIngressAnnotations
+}
+
+func GetGatewayWorkspaceConfigMapLabels(cluster *v2alpha1.CheCluster) map[string]string {
+	if len(cluster.Spec.Gateway.ConfigLabels) > 0 {
+		return cluster.Spec.Gateway.ConfigLabels
+	}
+	return defaultGatewayConfigLabels
 }
 
 func read(varName string, fallback string) string {

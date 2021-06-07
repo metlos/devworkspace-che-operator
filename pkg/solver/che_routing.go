@@ -211,7 +211,7 @@ func isSecureScheme(scheme string) bool {
 func (c *CheRoutingSolver) getGatewayConfigsAndFillRoutingObjects(cheManager *v2alpha1.CheCluster, workspaceID string, routing *dwo.DevWorkspaceRouting, objs *solvers.RoutingObjects) ([]corev1.ConfigMap, error) {
 	restrictedAnno, setRestrictedAnno := routing.Annotations[constants.DevWorkspaceRestrictedAccessAnnotation]
 
-	labels := defaults.GetLabelsForComponent(cheManager, "gateway-config")
+	labels := defaults.AddStandardLabelsForComponent(cheManager, "gateway-config", defaults.GetGatewayWorkspaceConfigMapLabels(cheManager))
 	labels[constants.DevWorkspaceIDLabel] = workspaceID
 	if setRestrictedAnno {
 		labels[constants.DevWorkspaceRestrictedAccessAnnotation] = restrictedAnno

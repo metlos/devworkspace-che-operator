@@ -46,6 +46,11 @@ func (g *CheGateway) reconcileIngress(syncer sync.Syncer, ctx context.Context, m
 }
 
 func getIngressSpec(manager *v2alpha1.CheCluster) *v1beta1.Ingress {
+	host := manager.Spec.Gateway.Host
+	if host == "" {
+		host = manager.Spec.WorkspaceDomainEndpoints.BaseDomain
+	}
+
 	pathType := v1beta1.PathTypeImplementationSpecific
 	ingress := &v1beta1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
@@ -57,7 +62,7 @@ func getIngressSpec(manager *v2alpha1.CheCluster) *v1beta1.Ingress {
 		Spec: v1beta1.IngressSpec{
 			Rules: []v1beta1.IngressRule{
 				{
-					Host: manager.Spec.Gateway.Host,
+					Host: host,
 					IngressRuleValue: v1beta1.IngressRuleValue{
 						HTTP: &v1beta1.HTTPIngressRuleValue{
 							Paths: []v1beta1.HTTPIngressPath{
