@@ -61,4 +61,7 @@ jobs:
         run: go mod download
       -
         name: Go test
+        env:
+          # needed for che-operator, so that it behaves nicely during the tests...
+          MOCK_API: "true"
         run: make test
