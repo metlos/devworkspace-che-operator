@@ -59,4 +59,4 @@ replace (
 
 replace github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309 // Required by Helm
 
-replace github.com/eclipse-che/che-operator => github.com/metlos/che-operator v0.0.0-20210607111224-74e4f9de99bc
+replace github.com/eclipse-che/che-operator => github.com/metlos/che-operator v0.0.0-20210607155040-562e95e39ad2
