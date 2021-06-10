@@ -120,7 +120,7 @@ func (c *CheRoutingSolver) cheSpecObjects(cheManager *v2alpha1.CheCluster, routi
 }
 
 func (c *CheRoutingSolver) cheExposedEndpoints(manager *v2alpha1.CheCluster, workspaceID string, endpoints map[string]dwo.EndpointList, routingObj solvers.RoutingObjects) (exposedEndpoints map[string]dwo.ExposedEndpointList, ready bool, err error) {
-	if manager.Status.GatewayPhase != v2alpha1.GatewayPhaseEstablished {
+	if manager.Status.GatewayPhase == v2alpha1.GatewayPhaseInitializing {
 		return nil, false, nil
 	}
 

@@ -162,7 +162,7 @@ func (r *CheReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	finalizerUpdated, err := r.ensureFinalizer(ctx, current)
 	if err != nil {
-		log.Info("Failed to set a finalizer on %s", req.String())
+		log.Info("Failed to set a finalizer", "object", req.String())
 		return ctrl.Result{}, err
 	} else if finalizerUpdated {
 		// we've updated the object with a new finalizer, so we will enter another reconciliation loop shortly
