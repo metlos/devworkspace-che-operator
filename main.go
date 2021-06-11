@@ -30,7 +30,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	"github.com/che-incubator/devworkspace-che-operator/pkg/manager"
+	"github.com/che-incubator/devworkspace-che-operator/pkg/controller"
 	"github.com/che-incubator/devworkspace-che-operator/pkg/solver"
 	"github.com/devfile/devworkspace-operator/pkg/infrastructure"
 	"github.com/eclipse-che/che-operator/pkg/apis"
@@ -89,7 +89,7 @@ func main() {
 
 	debugMemUsage()
 
-	cheReconciler := &manager.CheReconciler{}
+	cheReconciler := &controller.CheClusterReconciler{}
 	if err = cheReconciler.SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Che")
 		os.Exit(1)

@@ -18,8 +18,8 @@ import (
 
 	"github.com/devfile/devworkspace-operator/pkg/constants"
 
+	"github.com/che-incubator/devworkspace-che-operator/pkg/controller"
 	"github.com/che-incubator/devworkspace-che-operator/pkg/defaults"
-	"github.com/che-incubator/devworkspace-che-operator/pkg/manager"
 	controllerv1alpha1 "github.com/devfile/devworkspace-operator/apis/controller/v1alpha1"
 	dwo "github.com/devfile/devworkspace-operator/apis/controller/v1alpha1"
 	"github.com/devfile/devworkspace-operator/controllers/controller/devworkspacerouting/solvers"
@@ -174,7 +174,7 @@ func cheManagerOfRouting(routing *controllerv1alpha1.DevWorkspaceRouting) (*v2al
 }
 
 func findCheManager(cheManagerKey client.ObjectKey) (*v2alpha1.CheCluster, error) {
-	managers := manager.GetCurrentCheClusterInstances()
+	managers := controller.GetCurrentCheClusterInstances()
 	if len(managers) == 0 {
 		// the CheManager has not been reconciled yet, so let's wait a bit
 		return &v2alpha1.CheCluster{}, &solvers.RoutingNotReady{Retry: 1 * time.Second}

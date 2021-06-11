@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/che-incubator/devworkspace-che-operator/pkg/controller"
 	"github.com/che-incubator/devworkspace-che-operator/pkg/defaults"
-	"github.com/che-incubator/devworkspace-che-operator/pkg/manager"
 	dw "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/api/v2/pkg/attributes"
 	dwo "github.com/devfile/devworkspace-operator/apis/controller/v1alpha1"
@@ -69,7 +69,7 @@ func getSpecObjectsForManager(t *testing.T, mgr *v2alpha1.CheCluster, routing *d
 	}
 
 	// we need to do 1 round of che manager reconciliation so that the solver gets initialized
-	cheRecon := manager.New(cl, scheme)
+	cheRecon := controller.New(cl, scheme)
 	_, err = cheRecon.Reconcile(reconcile.Request{NamespacedName: types.NamespacedName{Name: mgr.Name, Namespace: mgr.Namespace}})
 	if err != nil {
 		t.Fatal(err)
@@ -91,7 +91,7 @@ func getSpecObjects(t *testing.T, routing *dwo.DevWorkspaceRouting) (client.Clie
 		ObjectMeta: metav1.ObjectMeta{
 			Name:       "che",
 			Namespace:  "ns",
-			Finalizers: []string{manager.FinalizerName},
+			Finalizers: []string{controller.FinalizerName},
 		},
 		Spec: v2alpha1.CheClusterSpec{
 			Gateway: v2alpha1.CheGatewaySpec{
@@ -503,7 +503,7 @@ func TestUsesIngressAnnotationsForWorkspaceEndpointIngresses(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:       "che",
 			Namespace:  "ns",
-			Finalizers: []string{manager.FinalizerName},
+			Finalizers: []string{controller.FinalizerName},
 		},
 		Spec: v2alpha1.CheClusterSpec{
 			Gateway: v2alpha1.CheGatewaySpec{
@@ -544,7 +544,7 @@ func TestUsesCustomCertificateForWorkspaceEndpointIngresses(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:       "che",
 			Namespace:  "ns",
-			Finalizers: []string{manager.FinalizerName},
+			Finalizers: []string{controller.FinalizerName},
 		},
 		Spec: v2alpha1.CheClusterSpec{
 			Gateway: v2alpha1.CheGatewaySpec{
@@ -598,7 +598,7 @@ func TestUsesCustomCertificateForWorkspaceEndpointRoutes(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:       "che",
 			Namespace:  "ns",
-			Finalizers: []string{manager.FinalizerName},
+			Finalizers: []string{controller.FinalizerName},
 		},
 		Spec: v2alpha1.CheClusterSpec{
 			Gateway: v2alpha1.CheGatewaySpec{

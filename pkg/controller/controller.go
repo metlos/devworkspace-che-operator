@@ -10,7 +10,7 @@
 //   Red Hat, Inc. - initial API and implementation
 //
 
-package manager
+package controller
 
 import (
 	"context"
@@ -52,7 +52,7 @@ const (
 	FinalizerName = "checluster.che.eclipse.org"
 )
 
-type CheReconciler struct {
+type CheClusterReconciler struct {
 	client  client.Client
 	scheme  *runtime.Scheme
 	gateway gateway.CheGateway
@@ -87,8 +87,8 @@ func GetCurrentCheClusterInstances() map[client.ObjectKey]v2alpha1.CheCluster {
 
 // New returns a new instance of the Che manager reconciler. This is mainly useful for
 // testing because it doesn't set up any watches in the cluster, etc. For that use SetupWithManager.
-func New(cl client.Client, scheme *runtime.Scheme) CheReconciler {
-	return CheReconciler{
+func New(cl client.Client, scheme *runtime.Scheme) CheClusterReconciler {
+	return CheClusterReconciler{
 		client:  cl,
 		scheme:  scheme,
 		gateway: gateway.New(cl, scheme),
@@ -96,7 +96,7 @@ func New(cl client.Client, scheme *runtime.Scheme) CheReconciler {
 	}
 }
 
-func (r *CheReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *CheClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.client = mgr.GetClient()
 	r.scheme = mgr.GetScheme()
 	r.gateway = gateway.New(mgr.GetClient(), mgr.GetScheme())
@@ -118,7 +118,7 @@ func (r *CheReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return bld.Complete(r)
 }
 
-func (r *CheReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
+func (r *CheClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 
 	cheInstancesAccess.Lock()
@@ -220,7 +220,7 @@ func (r *CheReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	return res, nil
 }
 
-func (r *CheReconciler) updateStatus(ctx context.Context, cluster *v2alpha1.CheCluster, v1Cluster *checlusterv1.CheCluster, changed *bool, host string, workspaceDomain string, phase v2alpha1.ClusterPhase, phaseMessage string) (ctrl.Result, error) {
+func (r *CheClusterReconciler) updateStatus(ctx context.Context, cluster *v2alpha1.CheCluster, v1Cluster *checlusterv1.CheCluster, changed *bool, host string, workspaceDomain string, phase v2alpha1.ClusterPhase, phaseMessage string) (ctrl.Result, error) {
 	currentPhase := cluster.Status.GatewayPhase
 
 	if changed != nil {
@@ -252,7 +252,7 @@ func (r *CheReconciler) updateStatus(ctx context.Context, cluster *v2alpha1.CheC
 	return ctrl.Result{Requeue: requeue}, err
 }
 
-func (r *CheReconciler) validate(cluster *v2alpha1.CheCluster) error {
+func (r *CheClusterReconciler) validate(cluster *v2alpha1.CheCluster) error {
 	validationErrors := []string{}
 
 	if !infrastructure.IsOpenShift() {
@@ -275,7 +275,7 @@ func (r *CheReconciler) validate(cluster *v2alpha1.CheCluster) error {
 	return nil
 }
 
-func (r *CheReconciler) finalize(ctx context.Context, cluster *v2alpha1.CheCluster, v1Cluster *checlusterv1.CheCluster) (err error) {
+func (r *CheClusterReconciler) finalize(ctx context.Context, cluster *v2alpha1.CheCluster, v1Cluster *checlusterv1.CheCluster) (err error) {
 	err = r.gatewayConfigFinalize(ctx, cluster)
 
 	if err == nil {
@@ -300,7 +300,7 @@ func (r *CheReconciler) finalize(ctx context.Context, cluster *v2alpha1.CheClust
 	return err
 }
 
-func (r *CheReconciler) ensureFinalizer(ctx context.Context, cluster *v2alpha1.CheCluster) (updated bool, err error) {
+func (r *CheClusterReconciler) ensureFinalizer(ctx context.Context, cluster *v2alpha1.CheCluster) (updated bool, err error) {
 
 	needsUpdate := true
 	if cluster.Finalizers != nil {
@@ -323,7 +323,7 @@ func (r *CheReconciler) ensureFinalizer(ctx context.Context, cluster *v2alpha1.C
 }
 
 // Tries to autodetect the route base domain.
-func (r *CheReconciler) detectOpenShiftRouteBaseDomain(cluster *v2alpha1.CheCluster) (string, error) {
+func (r *CheClusterReconciler) detectOpenShiftRouteBaseDomain(cluster *v2alpha1.CheCluster) (string, error) {
 	if !infrastructure.IsOpenShift() {
 		return "", nil
 	}

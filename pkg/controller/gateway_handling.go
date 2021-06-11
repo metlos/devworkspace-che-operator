@@ -1,4 +1,4 @@
-package manager
+package controller
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 
 // Reconciles the gateway - syncs it with the cluster if gateway is enabled in the manager, other deletes it.
 // Returns true if gateway deployment is changed, the host on which it is deployed (if so), and error (if any).
-func (r *CheReconciler) gatewayReconcile(ctx context.Context, cluster *v2alpha1.CheCluster) (bool, string, error) {
+func (r *CheClusterReconciler) gatewayReconcile(ctx context.Context, cluster *v2alpha1.CheCluster) (bool, string, error) {
 	var changed bool
 	var err error
 	var host string
@@ -30,7 +30,7 @@ func (r *CheReconciler) gatewayReconcile(ctx context.Context, cluster *v2alpha1.
 
 // Checks that there are no devworkspace configurations for the gateway (which would mean running devworkspaces).
 // If there are some, an error is returned.
-func (r *CheReconciler) gatewayConfigFinalize(ctx context.Context, cluster *v2alpha1.CheCluster) error {
+func (r *CheClusterReconciler) gatewayConfigFinalize(ctx context.Context, cluster *v2alpha1.CheCluster) error {
 	// we need to stop the reconcile if there are devworkspaces handled by it.
 	// we detect that by the presence of the gateway configmaps in the namespace of the manager
 	list := corev1.ConfigMapList{}

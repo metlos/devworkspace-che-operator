@@ -1,4 +1,4 @@
-package manager
+package controller
 
 import (
 	"context"
@@ -66,7 +66,7 @@ func TestCreatesObjectsInSingleHost(t *testing.T) {
 		},
 	}))
 
-	reconciler := CheReconciler{client: cl, scheme: scheme, gateway: gateway.New(cl, scheme), syncer: sync.New(cl, scheme)}
+	reconciler := CheClusterReconciler{client: cl, scheme: scheme, gateway: gateway.New(cl, scheme), syncer: sync.New(cl, scheme)}
 
 	// first reconcile sets the finalizer, second reconcile actually finishes the process
 	_, err := reconciler.Reconcile(reconcile.Request{NamespacedName: types.NamespacedName{Name: managerName, Namespace: ns}})
@@ -146,7 +146,7 @@ func TestUpdatesObjectsInSingleHost(t *testing.T) {
 
 	ctx := context.TODO()
 
-	reconciler := CheReconciler{client: cl, scheme: scheme, gateway: gateway.New(cl, scheme), syncer: sync.New(cl, scheme)}
+	reconciler := CheClusterReconciler{client: cl, scheme: scheme, gateway: gateway.New(cl, scheme), syncer: sync.New(cl, scheme)}
 
 	_, err := reconciler.Reconcile(reconcile.Request{NamespacedName: types.NamespacedName{Name: managerName, Namespace: ns}})
 	if err != nil {
@@ -191,7 +191,7 @@ func TestDoesntCreateObjectsInMultiHost(t *testing.T) {
 		},
 	}))
 
-	reconciler := CheReconciler{client: cl, scheme: scheme, gateway: gateway.New(cl, scheme), syncer: sync.New(cl, scheme)}
+	reconciler := CheClusterReconciler{client: cl, scheme: scheme, gateway: gateway.New(cl, scheme), syncer: sync.New(cl, scheme)}
 
 	_, err := reconciler.Reconcile(reconcile.Request{NamespacedName: types.NamespacedName{Name: managerName, Namespace: ns}})
 	if err != nil {
@@ -263,7 +263,7 @@ func TestDeletesObjectsInMultiHost(t *testing.T) {
 
 	ctx := context.TODO()
 
-	reconciler := CheReconciler{client: cl, scheme: scheme, gateway: gateway.New(cl, scheme), syncer: sync.New(cl, scheme)}
+	reconciler := CheClusterReconciler{client: cl, scheme: scheme, gateway: gateway.New(cl, scheme), syncer: sync.New(cl, scheme)}
 
 	_, err := reconciler.Reconcile(reconcile.Request{NamespacedName: types.NamespacedName{Name: managerName, Namespace: ns}})
 	if err != nil {
@@ -286,7 +286,7 @@ func TestNoManagerSharedWhenReconcilingNonExistent(t *testing.T) {
 
 	ctx := context.TODO()
 
-	reconciler := CheReconciler{client: cl, scheme: scheme, gateway: gateway.New(cl, scheme), syncer: sync.New(cl, scheme)}
+	reconciler := CheClusterReconciler{client: cl, scheme: scheme, gateway: gateway.New(cl, scheme), syncer: sync.New(cl, scheme)}
 
 	_, err := reconciler.Reconcile(reconcile.Request{NamespacedName: types.NamespacedName{Name: managerName, Namespace: ns}})
 	if err != nil {
@@ -354,7 +354,7 @@ func TestAddsManagerToSharedMapOnCreate(t *testing.T) {
 		},
 	}))
 
-	reconciler := CheReconciler{client: cl, scheme: scheme, gateway: gateway.New(cl, scheme), syncer: sync.New(cl, scheme)}
+	reconciler := CheClusterReconciler{client: cl, scheme: scheme, gateway: gateway.New(cl, scheme), syncer: sync.New(cl, scheme)}
 
 	_, err := reconciler.Reconcile(reconcile.Request{NamespacedName: types.NamespacedName{Name: managerName, Namespace: ns}})
 	if err != nil {
@@ -403,7 +403,7 @@ func TestUpdatesManagerInSharedMapOnUpdate(t *testing.T) {
 		},
 	}))
 
-	reconciler := CheReconciler{client: cl, scheme: scheme, gateway: gateway.New(cl, scheme), syncer: sync.New(cl, scheme)}
+	reconciler := CheClusterReconciler{client: cl, scheme: scheme, gateway: gateway.New(cl, scheme), syncer: sync.New(cl, scheme)}
 
 	_, err := reconciler.Reconcile(reconcile.Request{NamespacedName: types.NamespacedName{Name: managerName, Namespace: ns}})
 	if err != nil {
@@ -500,7 +500,7 @@ func TestRemovesManagerFromSharedMapOnDelete(t *testing.T) {
 		},
 	}))
 
-	reconciler := CheReconciler{client: cl, scheme: scheme, gateway: gateway.New(cl, scheme), syncer: sync.New(cl, scheme)}
+	reconciler := CheClusterReconciler{client: cl, scheme: scheme, gateway: gateway.New(cl, scheme), syncer: sync.New(cl, scheme)}
 
 	_, err := reconciler.Reconcile(reconcile.Request{NamespacedName: types.NamespacedName{Name: managerName, Namespace: ns}})
 	if err != nil {
@@ -570,7 +570,7 @@ func TestManagerFinalization(t *testing.T) {
 			},
 		})
 
-	reconciler := CheReconciler{client: cl, scheme: scheme, gateway: gateway.New(cl, scheme), syncer: sync.New(cl, scheme)}
+	reconciler := CheClusterReconciler{client: cl, scheme: scheme, gateway: gateway.New(cl, scheme), syncer: sync.New(cl, scheme)}
 
 	_, err := reconciler.Reconcile(reconcile.Request{NamespacedName: types.NamespacedName{Name: managerName, Namespace: ns}})
 	if err != nil {
