@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -14,6 +15,8 @@ import (
 	checluster "github.com/eclipse-che/che-operator/pkg/apis/org"
 	v1 "github.com/eclipse-che/che-operator/pkg/apis/org/v1"
 	"github.com/eclipse-che/che-operator/pkg/apis/org/v2alpha1"
+	"github.com/eclipse-che/che-operator/pkg/deploy"
+	"github.com/eclipse-che/che-operator/pkg/util"
 
 	routev1 "github.com/openshift/api/route/v1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -47,6 +50,8 @@ func createTestScheme() *runtime.Scheme {
 }
 
 func TestCreatesObjectsInSingleHost(t *testing.T) {
+	t.Skipf("Che-operator is now in charge of gateway deployment but keeping the test code around if we change our minds again.")
+
 	managerName := "che"
 	ns := "default"
 	scheme := createTestScheme()
@@ -82,6 +87,8 @@ func TestCreatesObjectsInSingleHost(t *testing.T) {
 }
 
 func TestUpdatesObjectsInSingleHost(t *testing.T) {
+	t.Skipf("Che-operator is now in charge of gateway deployment but keeping the test code around if we change our minds again.")
+
 	managerName := "che"
 	ns := "default"
 
@@ -202,6 +209,8 @@ func TestDoesntCreateObjectsInMultiHost(t *testing.T) {
 }
 
 func TestDeletesObjectsInMultiHost(t *testing.T) {
+	t.Skipf("Che-operator is now in charge of gateway deployment but keeping the test code around if we change our minds again.")
+
 	managerName := "che"
 	ns := "default"
 
@@ -647,6 +656,149 @@ func TestManagerFinalization(t *testing.T) {
 	}
 }
 
+// This test should be removed if we are again in charge of gateway creation.
+func TestExternalGatewayDetection(t *testing.T) {
+	origFlavor := os.Getenv("CHE_FLAVOR")
+	t.Cleanup(func() {
+		os.Setenv("CHE_FLAVOR", origFlavor)
+	})
+
+	os.Setenv("CHE_FLAVOR", "test-che")
+
+	scheme := createTestScheme()
+
+	clusterName := "eclipse-che"
+	ns := "default"
+
+	v2cluster := &v2alpha1.CheCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      clusterName,
+			Namespace: ns,
+		},
+		Spec: v2alpha1.CheClusterSpec{
+			WorkspaceDomainEndpoints: v2alpha1.WorkspaceDomainEndpoints{
+				BaseDomain: "down.on.earth",
+			},
+		},
+	}
+
+	onKubernetes(func() {
+		v1Cluster := asV1(v2cluster)
+
+		cl := fake.NewFakeClientWithScheme(scheme,
+			v1Cluster,
+			&extensions.Ingress{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingress",
+					Namespace: ns,
+					Labels:    deploy.GetLabels(v1Cluster, "test-che"),
+				},
+				Spec: extensions.IngressSpec{
+					Rules: []extensions.IngressRule{
+						{
+							Host: "ingress.host",
+						},
+					},
+				},
+			},
+		)
+
+		reconciler := CheClusterReconciler{client: cl, scheme: scheme, gateway: gateway.New(cl, scheme), syncer: sync.New(cl, scheme)}
+
+		// first reconcile sets the finalizer, second reconcile actually finishes the process
+		_, err := reconciler.Reconcile(reconcile.Request{NamespacedName: types.NamespacedName{Name: clusterName, Namespace: ns}})
+		if err != nil {
+			t.Fatalf("Failed to reconcile che manager with error: %s", err)
+		}
+		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: types.NamespacedName{Name: clusterName, Namespace: ns}})
+		if err != nil {
+			t.Fatalf("Failed to reconcile che manager with error: %s", err)
+		}
+
+		persisted := v1.CheCluster{}
+		if err := cl.Get(context.TODO(), types.NamespacedName{Name: clusterName, Namespace: ns}, &persisted); err != nil {
+			t.Fatal(err)
+		}
+
+		if persisted.Status.DevworkspaceStatus.Phase != v2alpha1.ClusterPhaseActive {
+			t.Fatalf("Unexpected cluster state: %v", persisted.Status.DevworkspaceStatus.Phase)
+		}
+
+		if persisted.Status.DevworkspaceStatus.GatewayHost != "ingress.host" {
+			t.Fatalf("Unexpected gateway host: %v", persisted.Status.DevworkspaceStatus.GatewayHost)
+		}
+	})
+
+	onOpenShift(func() {
+		v1Cluster := asV1(v2cluster)
+
+		cl := fake.NewFakeClientWithScheme(scheme,
+			v1Cluster,
+			&routev1.Route{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "route",
+					Namespace: ns,
+					Labels:    deploy.GetLabels(v1Cluster, "test-che"),
+				},
+				Spec: routev1.RouteSpec{
+					Host: "route.host",
+				},
+			},
+		)
+
+		reconciler := CheClusterReconciler{client: cl, scheme: scheme, gateway: gateway.New(cl, scheme), syncer: sync.New(cl, scheme)}
+
+		// first reconcile sets the finalizer, second reconcile actually finishes the process
+		_, err := reconciler.Reconcile(reconcile.Request{NamespacedName: types.NamespacedName{Name: clusterName, Namespace: ns}})
+		if err != nil {
+			t.Fatalf("Failed to reconcile che manager with error: %s", err)
+		}
+		_, err = reconciler.Reconcile(reconcile.Request{NamespacedName: types.NamespacedName{Name: clusterName, Namespace: ns}})
+		if err != nil {
+			t.Fatalf("Failed to reconcile che manager with error: %s", err)
+		}
+
+		persisted := v1.CheCluster{}
+		if err := cl.Get(context.TODO(), types.NamespacedName{Name: clusterName, Namespace: ns}, &persisted); err != nil {
+			t.Fatal(err)
+		}
+
+		if persisted.Status.DevworkspaceStatus.Phase != v2alpha1.ClusterPhaseActive {
+			t.Fatalf("Unexpected cluster state: %v", persisted.Status.DevworkspaceStatus.Phase)
+		}
+
+		if persisted.Status.DevworkspaceStatus.GatewayHost != "route.host" {
+			t.Fatalf("Unexpected gateway host: %v", persisted.Status.DevworkspaceStatus.GatewayHost)
+		}
+	})
+}
+
 func asV1(v2Obj *v2alpha1.CheCluster) *v1.CheCluster {
 	return checluster.AsV1(v2Obj)
+}
+
+func onKubernetes(f func()) {
+	isOpenShift := util.IsOpenShift
+	isOpenShift4 := util.IsOpenShift4
+
+	util.IsOpenShift = false
+	util.IsOpenShift4 = false
+
+	f()
+
+	util.IsOpenShift = isOpenShift
+	util.IsOpenShift4 = isOpenShift4
+}
+
+func onOpenShift(f func()) {
+	isOpenShift := util.IsOpenShift
+	isOpenShift4 := util.IsOpenShift4
+
+	util.IsOpenShift = true
+	util.IsOpenShift4 = true
+
+	f()
+
+	util.IsOpenShift = isOpenShift
+	util.IsOpenShift4 = isOpenShift4
 }

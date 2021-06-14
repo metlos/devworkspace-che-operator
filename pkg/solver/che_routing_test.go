@@ -230,25 +230,16 @@ func TestCreateRelocatedObjects(t *testing.T) {
 		cms := &corev1.ConfigMapList{}
 		cl.List(context.TODO(), cms)
 
-		if len(cms.Items) != 2 {
-			t.Errorf("there should be 2 configmaps created for the gateway config of the workspace and che but there were: %d", len(cms.Items))
+		if len(cms.Items) != 1 {
+			t.Errorf("there should be 1 configmap created for the gateway config of the workspace but there were: %d", len(cms.Items))
 		}
 
-		var cheMgrCfg *corev1.ConfigMap
 		var workspaceCfg *corev1.ConfigMap
 
 		for _, cfg := range cms.Items {
-			if cfg.Name == "che" {
-				cheMgrCfg = &cfg
-			}
-
 			if cfg.Name == "wsid" {
 				workspaceCfg = &cfg
 			}
-		}
-
-		if cheMgrCfg == nil {
-			t.Error("traefik configuration for che manager not found")
 		}
 
 		if workspaceCfg == nil {
@@ -309,13 +300,8 @@ func TestCreateSubDomainObjects(t *testing.T) {
 			cms := &corev1.ConfigMapList{}
 			cl.List(context.TODO(), cms)
 
-			if len(cms.Items) != 1 {
-				t.Errorf("there should be 1 configmaps created for the gateway config of the workspace and che but there were: %d", len(cms.Items))
-			}
-
-			cm := cms.Items[0]
-			if _, ok := cm.Data["traefik.yml"]; !ok {
-				t.Errorf("There should be basic gateway configuration with a config file called `traefik.yml`, but none such found.")
+			if len(cms.Items) != 0 {
+				t.Errorf("there should be 0 configmaps created but there were: %d", len(cms.Items))
 			}
 		})
 
@@ -463,13 +449,8 @@ func TestFinalize(t *testing.T) {
 	cms := &corev1.ConfigMapList{}
 	cl.List(context.TODO(), cms)
 
-	if len(cms.Items) != 1 {
-		t.Fatalf("There should be just 1 configmap after routing finalization, but there were %d found", len(cms.Items))
-	}
-
-	cm := cms.Items[0]
-	if cm.Name != "che" {
-		t.Fatal("The only configmap left should be the main traefik config, but the configmap has unexpected name")
+	if len(cms.Items) != 0 {
+		t.Fatalf("There should be just 0 configmaps after routing finalization, but there were %d found", len(cms.Items))
 	}
 }
 

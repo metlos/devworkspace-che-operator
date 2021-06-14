@@ -29,6 +29,8 @@ import (
 	checluster "github.com/eclipse-che/che-operator/pkg/apis/org"
 	checlusterv1 "github.com/eclipse-che/che-operator/pkg/apis/org/v1"
 	"github.com/eclipse-che/che-operator/pkg/apis/org/v2alpha1"
+	"github.com/eclipse-che/che-operator/pkg/deploy"
+	"github.com/eclipse-che/che-operator/pkg/util"
 	routev1 "github.com/openshift/api/route/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -36,6 +38,7 @@ import (
 	rbac "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -186,9 +189,21 @@ func (r *CheClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 	var changed bool
 	var host string
 
-	if changed, host, err = r.gatewayReconcile(ctx, current); err != nil {
+	// We are no longer in charge of the gateway, leaving the responsibility for managing it on the che-operator.
+	// But we need to detect the hostname on which the gateway is exposed so that the rest of our subsystems work.
+	host, err = r.detectCheHost(ctx, currentV1)
+	if err != nil {
 		return ctrl.Result{}, err
 	}
+
+	// setting changed to false, because we jump from inactive directly to established, because we are no longer in
+	// control of gateway creation
+	changed = false
+
+	// This was the original gateway reconciliation code replaced by the above
+	// if changed, host, err = r.gatewayReconcile(ctx, current); err != nil {
+	// 	return ctrl.Result{}, err
+	// }
 
 	workspaceBaseDomain := current.Spec.WorkspaceDomainEndpoints.BaseDomain
 
@@ -360,4 +375,53 @@ func randomSuffix(length int) string {
 	rnd.Read(arr)
 
 	return hex.EncodeToString(arr)
+}
+
+func (r *CheClusterReconciler) detectCheHost(ctx context.Context, cluster *checlusterv1.CheCluster) (string, error) {
+	host := cluster.Spec.Server.CheHost
+
+	if host == "" {
+		expectedLabels := deploy.GetLabels(cluster, deploy.DefaultCheFlavor(cluster))
+		lbls := labels.SelectorFromSet(expectedLabels)
+
+		if util.IsOpenShift {
+			list := routev1.RouteList{}
+			err := r.client.List(ctx, &list, &client.ListOptions{
+				Namespace:     cluster.Namespace,
+				LabelSelector: lbls,
+			})
+
+			if err != nil {
+				return "", err
+			}
+
+			if len(list.Items) == 0 {
+				return "", fmt.Errorf("expecting exactly 1 route to match Che gateway labels but found %d", len(list.Items))
+			}
+
+			host = list.Items[0].Spec.Host
+		} else {
+			list := v1beta1.IngressList{}
+			err := r.client.List(ctx, &list, &client.ListOptions{
+				Namespace:     cluster.Namespace,
+				LabelSelector: lbls,
+			})
+
+			if err != nil {
+				return "", err
+			}
+
+			if len(list.Items) == 0 {
+				return "", fmt.Errorf("expecting exactly 1 ingress to match Che gateway labels but found %d", len(list.Items))
+			}
+
+			if len(list.Items[0].Spec.Rules) != 1 {
+				return "", fmt.Errorf("expecting exactly 1 rule on the Che gateway ingress but found %d. This is a bug", len(list.Items[0].Spec.Rules))
+			}
+
+			host = list.Items[0].Spec.Rules[0].Host
+		}
+	}
+
+	return host, nil
 }
